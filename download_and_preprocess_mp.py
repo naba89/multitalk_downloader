@@ -6,7 +6,6 @@ import subprocess
 from multiprocessing import Pool, cpu_count
 from yt_dlp import YoutubeDL
 
-
 ANNOTATION_BASE_URL = 'https://github.com/postech-ami/MultiTalk/raw/refs/heads/main/MultiTalk_dataset/annotations/'
 
 VALID_LANGUAGES = ['arabic', 'catalan', 'croatian', 'czech', 'dutch', 'english', 'french', 'german', 'greek',
@@ -88,7 +87,7 @@ def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox, time):
     top, bottom, left, right = to_square(denorm(expand(bbox, 0.02), height, width))
     start_sec, end_sec = time
 
-    cmd = f"ffmpeg -i {raw_vid_path} -r 25 -vf crop=w={right-left}:h={bottom-top}:x={left}:y={top},scale=512:512 -ss {start_sec} -to {end_sec} -loglevel error -y {out_path}"
+    cmd = f"ffmpeg -i {raw_vid_path} -r 25 -vf crop=w={right - left}:h={bottom - top}:x={left}:y={top},scale=512:512 -ss {start_sec} -to {end_sec} -loglevel error -y {out_path}"
     subprocess.run(cmd, shell=True, check=True)
 
 
@@ -105,16 +104,10 @@ def load_data(file_path):
         yield ytb_id, save_name, time, bbox, language
 
 
-def download_and_process(args):
+def process_annotation(args):
     yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time = args
     raw_vid_path = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
 
-    # Download the video if not already downloaded
-    if not os.path.exists(raw_vid_path) or os.path.getsize(raw_vid_path) == 0:
-        download_result = download_video(yt_id, raw_vid_dir)
-        print(download_result)
-
-    # Process the video
     try:
         process_ffmpeg(raw_vid_path, processed_vid_dir, save_vid_name, bbox, time)
         return f"{yt_id}, processing DONE!"
@@ -141,14 +134,29 @@ if __name__ == '__main__':
 
         # download the annotation file
         annotation_url = ANNOTATION_BASE_URL + f'{language}.json'
+        cmd = f'wget {annotation_url} -P ./annotation'
+        subprocess.run(cmd, shell=True, check=True)
         json_path = f'./annotation/{language}.json'
-        
-        if not os.path.exists(json_path):
-            cmd = f'wget {annotation_url} -P ./annotation'
-            subprocess.run(cmd, shell=True, check=True)
 
+        # Load data and collect unique YouTube IDs
         vidinfos = list(load_data(json_path))
+        unique_yt_ids = set(vidinfo[0] for vidinfo in vidinfos)
 
-        # run sequentially
-        for vidinfo in vidinfos:
-            download_and_process(vidinfo)
+        # Step 1: Download videos using multiprocessing (unique YouTube IDs)
+        with Pool(cpu_count()) as pool:
+            download_results = pool.starmap(download_video,
+                                            [(yt_id, os.path.join(raw_vid_root, language)) for yt_id in unique_yt_ids])
+
+        for result in download_results:
+            print(result)
+
+        # Step 2: Process each annotation using multiprocessing
+        task_args = [(ytb_id, os.path.join(raw_vid_root, language), os.path.join(processed_vid_root, language),
+                      save_vid_name, bbox, time)
+                     for ytb_id, save_vid_name, time, bbox, language in vidinfos]
+
+        with Pool(cpu_count()) as pool:
+            process_results = pool.map(process_annotation, task_args)
+
+        for result in process_results:
+            print(result)
