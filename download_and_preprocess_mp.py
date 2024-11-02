@@ -154,10 +154,14 @@ if __name__ == '__main__':
         # Load data and collect unique YouTube IDs
         vidinfos = list(load_data(json_path))
 
+        random.seed(0)
+        test_vid_infos = random.sample(vidinfos, args.num_test)
+        train_vid_infos = [vidinfo for vidinfo in vidinfos if vidinfo not in test_vid_infos]
+
         if args.test_only:
-            # randomly select test videos
-            random.seed(0)
-            vidinfos = random.sample(vidinfos, args.num_test)
+            vidinfos = test_vid_infos
+        else:
+            vidinfos = train_vid_infos
 
         vid_infos.extend(vidinfos)
         unique_yt_ids.update((vidinfo[0], language) for vidinfo in vidinfos)
