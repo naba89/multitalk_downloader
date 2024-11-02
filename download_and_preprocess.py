@@ -95,8 +95,9 @@ def download_and_process(vidinfo):
     }
 
     try:
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([yt_url])
+        if not os.path.exists(vidinfo.video_out_filename):
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([yt_url])
     except:
         return_msg = f'{vidinfo.yt_id}, ERROR (youtube)!'
         return return_msg
