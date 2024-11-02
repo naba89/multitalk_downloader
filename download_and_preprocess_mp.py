@@ -22,7 +22,7 @@ def download_video(yt_id, raw_vid_dir):
         return f"{yt_id} already downloaded."
 
     ydl_opts = {
-        'format': 'bestvideo+bestaudio',
+        'format': 'bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a][acodec^=mp4a]',
         'merge_output_format': 'mp4',
         'outtmpl': video_path,
         'retries': 3,
@@ -31,10 +31,10 @@ def download_video(yt_id, raw_vid_dir):
             'preferedformat': 'mp4',
         }],
         'postprocessor_args': [
-            '-c:v', 'libx264',  # Re-encode video to H.264
-            '-c:a', 'aac',  # Re-encode audio to AAC
+            '-c:v', 'copy',  # Copy video stream without re-encoding
+            '-c:a', 'copy',  # Copy audio stream without re-encoding
         ],
-        'quiet': True,  # Suppress console output
+        'quiet': True,
     }
 
     try:
