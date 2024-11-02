@@ -1,4 +1,5 @@
-# multitalk_downloader
+# A Multiprocess Downloader for MultiTalk Dataset
+Original dataset: [MultiTalk](https://github.com/postech-ami/MultiTalk/tree/main/MultiTalk_dataset)
 
 ## Instal requirements
 Install ffmpeg, for example:
