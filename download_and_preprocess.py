@@ -5,6 +5,7 @@ import argparse
 import subprocess
 import tqdm
 from yt_dlp import YoutubeDL
+from multiprocessing import Pool, cpu_count
 
 ANNOTATION_BASE_URL = 'https://github.com/postech-ami/MultiTalk/raw/refs/heads/main/MultiTalk_dataset/annotations/'
 
@@ -103,15 +104,8 @@ def load_data(file_path):
         yield ytb_id, save_name, time, bbox, language
 
 
-def download_and_process(yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time):
-    raw_vid_path = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
-
-    # Download the video if not already downloaded
-    if not os.path.exists(raw_vid_path) or os.path.getsize(raw_vid_path) == 0:
-        download_result = download_video(yt_id, raw_vid_dir)
-        print(download_result)
-
-    # Process the video
+def process_task(args):
+    yt_id, raw_vid_path, processed_vid_dir, save_vid_name, bbox, time = args
     try:
         process_ffmpeg(raw_vid_path, processed_vid_dir, save_vid_name, bbox, time)
         return f"{yt_id}, processing DONE!"
@@ -136,7 +130,7 @@ if __name__ == '__main__':
         os.makedirs(raw_vid_root, exist_ok=True)
         os.makedirs('./annotation', exist_ok=True)
 
-        # download the annotation file
+        # Download the annotation file
         annotation_url = ANNOTATION_BASE_URL + f'{language}.json'
         json_path = f'./annotation/{language}.json'
 
@@ -146,6 +140,17 @@ if __name__ == '__main__':
 
         vid_infos = list(load_data(json_path))
 
-        # run sequentially
-        for yt_id, save_vid_name, time, bbox, language in tqdm.tqdm(vid_infos):
-            download_and_process(yt_id, raw_vid_root, processed_vid_root, save_vid_name, bbox, time)
+        # Step 1: Download videos serially
+        for yt_id, _, _, _, _ in tqdm.tqdm(vid_infos, desc="Downloading Videos"):
+            download_result = download_video(yt_id, raw_vid_root)
+            print(download_result)
+
+        # Step 2: Process videos in parallel with tqdm
+        process_args = [
+            (yt_id, os.path.join(raw_vid_root, f"{yt_id}.mp4"), processed_vid_root, save_vid_name, bbox, time)
+            for yt_id, save_vid_name, time, bbox, language in vid_infos
+        ]
+
+        with Pool(cpu_count()) as pool:
+            for result in tqdm.tqdm(pool.imap(process_task, process_args), total=len(process_args), desc="Processing Videos"):
+                print(result)
