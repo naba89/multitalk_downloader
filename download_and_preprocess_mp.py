@@ -124,6 +124,9 @@ if __name__ == '__main__':
     parser.add_argument('--num_test', type=int, default=5, help='Number of test videos')
     args = parser.parse_args()
 
+    if args.test_only:
+        args.root = os.path.join(args.root, 'test_set')
+
     for language in args.languages:
         if language not in VALID_LANGUAGES:
             print(f'Invalid language: {language}')
