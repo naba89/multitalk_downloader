@@ -14,5 +14,8 @@ pip install -r requirements.txt
 
 ## Usage
 ```bash
-python multitalk_downloader.py --help
+python download_and_preprocess_mp.py \
+--languages english italian french greek  \
+--root /datasets/MultiTalk \
+--test_only --num_test 5
 ```
