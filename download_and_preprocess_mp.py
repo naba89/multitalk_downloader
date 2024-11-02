@@ -134,6 +134,9 @@ if __name__ == '__main__':
 
         processed_vid_root = os.path.join(args.root, 'multitalk_dataset')
         raw_vid_root = os.path.join(args.root, 'raw_video')
+        print(f'Processing {language}...')
+        print(f'Processed video root: {processed_vid_root}')
+        print(f'Raw video root: {raw_vid_root}')
         os.makedirs(processed_vid_root, exist_ok=True)
         os.makedirs(raw_vid_root, exist_ok=True)
         os.makedirs('./annotation', exist_ok=True)
