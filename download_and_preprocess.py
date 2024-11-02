@@ -156,3 +156,7 @@ if __name__ == '__main__':
 
     bad_files.close()
     print("Total Error : ", err_cnt)
+
+    # Optionally delete the raw video files
+    # cmd = f'rm -rf {raw_vid_root}'
+    # subprocess.run(cmd, shell=True, check=True)
