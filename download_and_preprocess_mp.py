@@ -119,10 +119,12 @@ def process_annotation(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--languages', nargs='+', type=str, default=['english'], help='Languages to download')
-    parser.add_argument('--root', type=str, default='./', help='Root folder')
-    parser.add_argument('--test_only', action='store_true', help='Test only')
-    parser.add_argument('--num_test', type=int, default=5, help='Number of test videos')
+    parser.add_argument('--languages', nargs='+', type=str, default=['english'],
+                        help=f'Languages to download. As a list of strings separated by space.'
+                             f' Available languages: {VALID_LANGUAGES}')
+    parser.add_argument('--root', type=str, default='./', help='Root folder where the dataset will be saved')
+    parser.add_argument('--test_only', action='store_true', help='Download and process test videos only')
+    parser.add_argument('--num_test', type=int, default=5, help='Number of test videos per language')
     args = parser.parse_args()
 
     if args.test_only:
