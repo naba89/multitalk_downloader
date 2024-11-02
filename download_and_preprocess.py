@@ -16,19 +16,26 @@ class VidInfo:
     def __init__(self, yt_id, time, bbox, raw_vid_dir, processed_vid_dir):
         self.yt_id = yt_id
         self.processed_vid_dir = processed_vid_dir
-        self.start_time = float(time[0])
-        self.end_time = float(time[1])
+        self.time = time
         self.video_out_filename = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
         self.bbox = bbox
 
 
-def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox):
+def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox, time):
     """
     raw_vid_path:
     save_folder:
     save_vid_name:
     bbox: format: top, bottom, left, right. the values are normalized to 0~1
     """
+
+    def secs_to_timestr(secs):
+        hrs = secs // (60 * 60)
+        min = (secs - hrs * 3600) // 60
+        sec = secs % 60
+        end = (secs - int(secs)) * 100
+        return "{:02d}:{:02d}:{:02d}.{:02d}".format(int(hrs), int(min),
+                                                    int(sec), int(end))
 
     def expand(bbox, ratio):
         top, bottom = max(bbox[0] - ratio, 0), min(bbox[1] + ratio, 1)
@@ -67,7 +74,9 @@ def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox):
         denorm(expand(bbox, 0.02), height, width))
 
     # crop the video and scale to 512x512
-    cmd = f'ffmpeg -i {raw_vid_path} -vf "crop={right - left}:{bottom - top}:{left}:{top},scale=512:512" -y {out_path}'
+    start_sec, end_sec = time
+    cmd = (f'ffmpeg -i {raw_vid_path} -r 25 -vf "crop={right - left}:{bottom - top}:{left}:{top},scale=512:512" '
+           f'-ss {start_sec} -to {end_sec} -loglevel error {out_path}')
     subprocess.run(cmd, shell=True, check=True)
 
 
@@ -87,8 +96,8 @@ def download_and_process(vidinfo):
         }],
         'postprocessor_args': [
             '-y',  # Overwrite output file without asking
-            '-ss', f'{vidinfo.start_time}',  # Start time in seconds
-            '-to', f'{vidinfo.end_time}',  # End time in seconds
+            # '-ss', f'{vidinfo.start_time}',  # Start time in seconds
+            # '-to', f'{vidinfo.end_time}',  # End time in seconds
             '-c:v', 'libx264',  # Re-encode video to H.264 for compatibility
             '-c:a', 'aac',  # Re-encode audio to AAC for compatibility
         ],
@@ -103,7 +112,7 @@ def download_and_process(vidinfo):
         return return_msg
 
     try:
-        process_ffmpeg(vidinfo.video_out_filename, vidinfo.processed_vid_dir, f'{vidinfo.yt_id}.mp4', vidinfo.bbox)
+        process_ffmpeg(vidinfo.video_out_filename, vidinfo.processed_vid_dir, f'{vidinfo.yt_id}.mp4', vidinfo.bbox, vidinfo.time)
     except:
         return_msg = f'{vidinfo.yt_id}, ERROR (ffmpeg)!'
         return return_msg
