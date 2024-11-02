@@ -118,45 +118,46 @@ def load_data(file_path):
 
         bbox = [val['bbox']['top'], val['bbox']['bottom'],
                 val['bbox']['left'], val['bbox']['right']]
-        language = val['language']
-        yield ytb_id, save_name, time, bbox, language
+        yield ytb_id, save_name, time, bbox
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--language', type=str, default="japanese", help='Language')
+    parser.add_argument('--languages', nargs='+', type=str, default=['english'], help='Languages to download')
     parser.add_argument('--root', type=str, default='./', help='Root folder')
     args = parser.parse_args()
 
-    processed_vid_root = os.path.join(args.root, 'multitalk_dataset')  # processed video path
-    raw_vid_root = os.path.join(args.root, 'raw_video')  # downloaded raw video path
-    os.makedirs(processed_vid_root, exist_ok=True)
-    os.makedirs(raw_vid_root, exist_ok=True)
-    os.makedirs('./annotation', exist_ok=True)
+    for language in args.languages:
 
-    # download the annotation file
-    annotation_url = ANNOTATION_BASE_URL + f'{args.language}.json'
-    cmd = f'wget {annotation_url} -P ./annotation'
-    subprocess.run(cmd, shell=True, check=True)
-    json_path = f'./annotation/{args.language}.json'
+        processed_vid_root = os.path.join(args.root, 'multitalk_dataset', language)  # processed video path
+        raw_vid_root = os.path.join(args.root, 'raw_video', language)  # downloaded raw video path
+        os.makedirs(processed_vid_root, exist_ok=True)
+        os.makedirs(raw_vid_root, exist_ok=True)
+        os.makedirs('./annotation', exist_ok=True)
 
-    vidinfos = [VidInfo(ytb_id, time, bbox, raw_vid_root, processed_vid_root)
-                for ytb_id, save_name, time, bbox, language in load_data(json_path)]
+        # download the annotation file
+        annotation_url = ANNOTATION_BASE_URL + f'{language}.json'
+        cmd = f'wget {annotation_url} -P ./annotation'
+        subprocess.run(cmd, shell=True, check=True)
+        json_path = f'./annotation/{language}.json'
 
-    bad_files = open(f'bad_files_{args.language}.txt', 'w')
-    results = ThreadPool(10).imap_unordered(download_and_process, vidinfos)
+        vidinfos = [VidInfo(ytb_id, time, bbox, raw_vid_root, processed_vid_root)
+                    for ytb_id, save_name, time, bbox in load_data(json_path)]
 
-    cnt, err_cnt = 0, 0
-    for r in results:
-        cnt += 1
-        print(cnt, '/', len(vidinfos), r)
-        if 'ERROR' in r:
-            bad_files.write(r + '\n')
-            err_cnt += 1
+        bad_files = open(f'bad_files_{language}.txt', 'w')
+        results = ThreadPool(10).imap_unordered(download_and_process, vidinfos)
 
-    bad_files.close()
-    print("Total Error : ", err_cnt)
+        cnt, err_cnt = 0, 0
+        for r in results:
+            cnt += 1
+            print(cnt, '/', len(vidinfos), r)
+            if 'ERROR' in r:
+                bad_files.write(r + '\n')
+                err_cnt += 1
 
-    # Optionally delete the raw video files
-    # cmd = f'rm -rf {raw_vid_root}'
-    # subprocess.run(cmd, shell=True, check=True)
+        bad_files.close()
+        print("Total Error : ", err_cnt)
+
+        # Optionally delete the raw video files
+        # cmd = f'rm -rf {raw_vid_root}'
+        # subprocess.run(cmd, shell=True, check=True)
