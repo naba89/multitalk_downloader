@@ -67,8 +67,7 @@ def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox):
         denorm(expand(bbox, 0.02), height, width))
 
     # crop the video and scale to 512x512
-    cmd = (f'ffmpeg -i {raw_vid_path} -vf "crop={width * right - width * left}:{height * bottom - height * top}'
-           f':{width * left}:{height * top}, scale=512:512" -y {out_path}')
+    cmd = f'ffmpeg -i {raw_vid_path} -vf "crop={right - left}:{bottom - top}:{left}:{top},scale=512:512" -y {out_path}'
     subprocess.run(cmd, shell=True, check=True)
 
 
