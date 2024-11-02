@@ -108,6 +108,7 @@ def load_data(file_path):
 def process_annotation(args):
     yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time = args
     raw_vid_path = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
+    os.makedirs(processed_vid_dir, exist_ok=True)
 
     try:
         process_ffmpeg(raw_vid_path, processed_vid_dir, save_vid_name, bbox, time)
@@ -159,22 +160,22 @@ if __name__ == '__main__':
         unique_yt_ids = set(vidinfo[0] for vidinfo in vidinfos)
         print(unique_yt_ids)
 
-        # # Step 1: Download videos using multiprocessing (unique YouTube IDs)
-        # num_procs = 8
-        # with Pool(8) as pool:
-        #     download_results = pool.starmap(download_video,
-        #                                     [(yt_id, os.path.join(raw_vid_root, language)) for yt_id in unique_yt_ids])
-        #
-        # for result in download_results:
-        #     print(result)
-        #
-        # # Step 2: Process each annotation using multiprocessing
-        # task_args = [(ytb_id, os.path.join(raw_vid_root, language), os.path.join(processed_vid_root, language),
-        #               save_vid_name, bbox, time)
-        #              for ytb_id, save_vid_name, time, bbox, language in vidinfos]
-        #
-        # with Pool(num_procs) as pool:
-        #     process_results = pool.map(process_annotation, task_args)
-        #
-        # for result in process_results:
-        #     print(result)
+        # Step 1: Download videos using multiprocessing (unique YouTube IDs)
+        num_procs = 8
+        with Pool(8) as pool:
+            download_results = pool.starmap(download_video,
+                                            [(yt_id, os.path.join(raw_vid_root, language)) for yt_id in unique_yt_ids])
+
+        for result in download_results:
+            print(result)
+
+        # Step 2: Process each annotation using multiprocessing
+        task_args = [(ytb_id, os.path.join(raw_vid_root, language), os.path.join(processed_vid_root, language),
+                      save_vid_name, bbox, time)
+                     for ytb_id, save_vid_name, time, bbox, language in vidinfos]
+
+        with Pool(num_procs) as pool:
+            process_results = pool.map(process_annotation, task_args)
+
+        for result in process_results:
+            print(result)
