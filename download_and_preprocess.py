@@ -35,7 +35,6 @@ def download_video(yt_id, raw_vid_dir):
             '-c:v', 'libx264',  # Re-encode video to H.264
             '-c:a', 'aac',  # Re-encode audio to AAC
         ],
-        'quiet': True,  # Suppress console output
     }
 
     try:
