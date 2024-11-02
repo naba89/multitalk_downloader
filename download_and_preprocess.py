@@ -79,6 +79,8 @@ def download_and_process(vidinfo):
     ydl_opts = {
         'format': 'bestvideo+bestaudio',
         'merge_output_format': 'mp4',
+        'nopart': True,  # Do not create .part files
+        'retries': 3,  # Number of retries
         'outtmpl': vidinfo.video_out_filename,
         'postprocessors': [{
             'key': 'FFmpegVideoConvertor',
