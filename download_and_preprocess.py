@@ -8,6 +8,9 @@ from yt_dlp import YoutubeDL
 
 ANNOTATION_BASE_URL = 'https://github.com/postech-ami/MultiTalk/raw/refs/heads/main/MultiTalk_dataset/annotations/'
 
+VALID_LANGUAGES = ['arabic', 'catalan', 'croatian', 'czech', 'dutch', 'english', 'french', 'german', 'greek',
+                   'hindi', 'italian', 'japanese', 'mandarin', 'polish', 'portuguese', 'russian',
+                   'spanish', 'thai', 'turkish', 'ukrainian']
 
 class VidInfo:
     def __init__(self, yt_id, time, bbox, raw_vid_dir, processed_vid_dir):
@@ -128,6 +131,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     for language in args.languages:
+        if language not in VALID_LANGUAGES:
+            print(f'Invalid language: {language}')
+            continue
 
         processed_vid_root = os.path.join(args.root, 'multitalk_dataset', language)  # processed video path
         raw_vid_root = os.path.join(args.root, 'raw_video', language)  # downloaded raw video path
