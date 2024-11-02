@@ -3,6 +3,7 @@ import json
 import cv2
 import argparse
 import subprocess
+import random
 from multiprocessing import Pool, cpu_count
 from yt_dlp import YoutubeDL
 
@@ -119,6 +120,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--languages', nargs='+', type=str, default=['english'], help='Languages to download')
     parser.add_argument('--root', type=str, default='./', help='Root folder')
+    parser.add_argument('--test_only', action='store_true', help='Test only')
+    parser.add_argument('--num_test', type=int, default=5, help='Number of test videos')
     args = parser.parse_args()
 
     for language in args.languages:
@@ -140,10 +143,17 @@ if __name__ == '__main__':
 
         # Load data and collect unique YouTube IDs
         vidinfos = list(load_data(json_path))
+
+        if args.test_only:
+            # randomly select test videos
+            random.seed(0)
+            vidinfos = random.sample(vidinfos, args.num_test)
+
         unique_yt_ids = set(vidinfo[0] for vidinfo in vidinfos)
 
         # Step 1: Download videos using multiprocessing (unique YouTube IDs)
-        with Pool(cpu_count()) as pool:
+        num_procs = 8
+        with Pool(8) as pool:
             download_results = pool.starmap(download_video,
                                             [(yt_id, os.path.join(raw_vid_root, language)) for yt_id in unique_yt_ids])
 
@@ -155,7 +165,7 @@ if __name__ == '__main__':
                       save_vid_name, bbox, time)
                      for ytb_id, save_vid_name, time, bbox, language in vidinfos]
 
-        with Pool(cpu_count()) as pool:
+        with Pool(num_procs) as pool:
             process_results = pool.map(process_annotation, task_args)
 
         for result in process_results:
