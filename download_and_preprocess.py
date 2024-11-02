@@ -105,8 +105,8 @@ def load_data(file_path):
         yield ytb_id, save_name, time, bbox, language
 
 
-def download_and_process(args):
-    yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time = args
+def download_and_process(yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time):
+
     raw_vid_path = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
 
     # Download the video if not already downloaded
@@ -133,8 +133,8 @@ if __name__ == '__main__':
             print(f'Invalid language: {language}')
             continue
 
-        processed_vid_root = os.path.join(args.root, 'multitalk_dataset')
-        raw_vid_root = os.path.join(args.root, 'raw_video')
+        processed_vid_root = os.path.join(args.root, 'multitalk_dataset', language)
+        raw_vid_root = os.path.join(args.root, 'raw_video', language)
         os.makedirs(processed_vid_root, exist_ok=True)
         os.makedirs(raw_vid_root, exist_ok=True)
         os.makedirs('./annotation', exist_ok=True)
@@ -142,13 +142,11 @@ if __name__ == '__main__':
         # download the annotation file
         annotation_url = ANNOTATION_BASE_URL + f'{language}.json'
         json_path = f'./annotation/{language}.json'
-        
+
         if not os.path.exists(json_path):
             cmd = f'wget {annotation_url} -P ./annotation'
             subprocess.run(cmd, shell=True, check=True)
 
-        vidinfos = list(load_data(json_path))
-
         # run sequentially
-        for vidinfo in vidinfos:
-            download_and_process(vidinfo)
+        for yt_id, save_vid_name, time, bbox, language in load_data(json_path):
+            download_and_process(yt_id, raw_vid_root, processed_vid_root, save_vid_name, bbox, time)
