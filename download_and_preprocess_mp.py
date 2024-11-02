@@ -128,18 +128,19 @@ if __name__ == '__main__':
     if args.test_only:
         args.root = os.path.join(args.root, 'test_set')
 
+    vid_infos = []
+    unique_yt_ids = set()
+
+    processed_vid_root = os.path.join(args.root, 'multitalk_dataset')
+    raw_vid_root = os.path.join(args.root, 'raw_video')
+    os.makedirs(processed_vid_root, exist_ok=True)
+    os.makedirs(raw_vid_root, exist_ok=True)
+
     for language in args.languages:
         if language not in VALID_LANGUAGES:
             print(f'Invalid language: {language}')
             continue
 
-        processed_vid_root = os.path.join(args.root, 'multitalk_dataset')
-        raw_vid_root = os.path.join(args.root, 'raw_video')
-        print(f'Processing {language}...')
-        print(f'Processed video root: {processed_vid_root}')
-        print(f'Raw video root: {raw_vid_root}')
-        os.makedirs(processed_vid_root, exist_ok=True)
-        os.makedirs(raw_vid_root, exist_ok=True)
         os.makedirs('./annotation', exist_ok=True)
 
         # download the annotation file
@@ -156,26 +157,26 @@ if __name__ == '__main__':
             random.seed(0)
             vidinfos = random.sample(vidinfos, args.num_test)
 
-        print([v for v in vidinfos])
-        unique_yt_ids = set(vidinfo[0] for vidinfo in vidinfos)
-        print(unique_yt_ids)
+        vid_infos.extend(vidinfos)
+        unique_yt_ids.update((vidinfo[0], language) for vidinfo in vidinfos)
 
-        # Step 1: Download videos using multiprocessing (unique YouTube IDs)
-        num_procs = 8
-        with Pool(8) as pool:
-            download_results = pool.starmap(download_video,
-                                            [(yt_id, os.path.join(raw_vid_root, language)) for yt_id in unique_yt_ids])
+    # Step 1: Download videos using multiprocessing (unique YouTube IDs)
+    num_procs = 8
+    with Pool(8) as pool:
+        download_results = pool.starmap(download_video,
+                                        [(yt_id, os.path.join(raw_vid_root, language))
+                                         for (yt_id, language) in unique_yt_ids])
 
-        for result in download_results:
-            print(result)
+    for result in download_results:
+        print(result)
 
-        # Step 2: Process each annotation using multiprocessing
-        task_args = [(ytb_id, os.path.join(raw_vid_root, language), os.path.join(processed_vid_root, language),
-                      save_vid_name, bbox, time)
-                     for ytb_id, save_vid_name, time, bbox, language in vidinfos]
+    # Step 2: Process each annotation using multiprocessing
+    task_args = [(ytb_id, os.path.join(raw_vid_root, language), os.path.join(processed_vid_root, language),
+                  save_vid_name, bbox, time)
+                 for ytb_id, save_vid_name, time, bbox, language in vid_infos]
 
-        with Pool(num_procs) as pool:
-            process_results = pool.map(process_annotation, task_args)
+    with Pool(num_procs) as pool:
+        process_results = pool.map(process_annotation, task_args)
 
-        for result in process_results:
-            print(result)
+    for result in process_results:
+        print(result)
