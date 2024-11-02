@@ -6,7 +6,6 @@ import subprocess
 import tqdm
 from yt_dlp import YoutubeDL
 
-
 ANNOTATION_BASE_URL = 'https://github.com/postech-ami/MultiTalk/raw/refs/heads/main/MultiTalk_dataset/annotations/'
 
 VALID_LANGUAGES = ['arabic', 'catalan', 'croatian', 'czech', 'dutch', 'english', 'french', 'german', 'greek',
@@ -23,7 +22,7 @@ def download_video(yt_id, raw_vid_dir):
         return f"{yt_id} already downloaded."
 
     ydl_opts = {
-        'format': 'bestvideo+bestaudio',
+        'format': 'bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a][acodec^=mp4a]',
         'merge_output_format': 'mp4',
         'outtmpl': video_path,
         'retries': 3,
@@ -32,8 +31,8 @@ def download_video(yt_id, raw_vid_dir):
             'preferedformat': 'mp4',
         }],
         'postprocessor_args': [
-            '-c:v', 'libx264',  # Re-encode video to H.264
-            '-c:a', 'aac',  # Re-encode audio to AAC
+            '-c:v', 'copy',  # Copy video stream without re-encoding
+            '-c:a', 'copy',  # Copy audio stream without re-encoding
         ],
     }
 
@@ -87,7 +86,7 @@ def process_ffmpeg(raw_vid_path, save_folder, save_vid_name, bbox, time):
     top, bottom, left, right = to_square(denorm(expand(bbox, 0.02), height, width))
     start_sec, end_sec = time
 
-    cmd = f"ffmpeg -i {raw_vid_path} -r 25 -vf crop=w={right-left}:h={bottom-top}:x={left}:y={top},scale=512:512 -ss {start_sec} -to {end_sec} -loglevel error -y {out_path}"
+    cmd = f"ffmpeg -i {raw_vid_path} -r 25 -vf crop=w={right - left}:h={bottom - top}:x={left}:y={top},scale=512:512 -ss {start_sec} -to {end_sec} -loglevel error -y {out_path}"
     subprocess.run(cmd, shell=True, check=True)
 
 
@@ -105,7 +104,6 @@ def load_data(file_path):
 
 
 def download_and_process(yt_id, raw_vid_dir, processed_vid_dir, save_vid_name, bbox, time):
-
     raw_vid_path = os.path.join(raw_vid_dir, f"{yt_id}.mp4")
 
     # Download the video if not already downloaded
