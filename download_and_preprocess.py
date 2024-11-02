@@ -144,6 +144,8 @@ if __name__ == '__main__':
             cmd = f'wget {annotation_url} -P ./annotation'
             subprocess.run(cmd, shell=True, check=True)
 
+        vid_infos = list(load_data(json_path))
+
         # run sequentially
-        for yt_id, save_vid_name, time, bbox, language in tqdm.tqdm(load_data(json_path)):
+        for yt_id, save_vid_name, time, bbox, language in tqdm.tqdm(vid_infos):
             download_and_process(yt_id, raw_vid_root, processed_vid_root, save_vid_name, bbox, time)
