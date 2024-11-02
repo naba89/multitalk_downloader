@@ -3,7 +3,7 @@ import json
 import cv2
 import argparse
 import subprocess
-from multiprocessing import Pool, cpu_count
+import tqdm
 from yt_dlp import YoutubeDL
 
 
@@ -147,5 +147,5 @@ if __name__ == '__main__':
             subprocess.run(cmd, shell=True, check=True)
 
         # run sequentially
-        for yt_id, save_vid_name, time, bbox, language in load_data(json_path):
+        for yt_id, save_vid_name, time, bbox, language in tqdm.tqdm(load_data(json_path)):
             download_and_process(yt_id, raw_vid_root, processed_vid_root, save_vid_name, bbox, time)
